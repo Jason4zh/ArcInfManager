@@ -31,19 +31,25 @@ jobs:
           set +e
           ./gradle-8.7/bin/gradle assembleDebug --no-daemon --stacktrace > ../build.log 2>&1
           echo "EXIT=$?" >> ../build.log
+      - name: errors
+        if: always()
+        run: |
+          echo '=== errors ==='
+          grep -n -m 80 'e: ' build.log || true
       - name: tail
-        run: tail -100 build.log
+        if: always()
+        run: tail -60 build.log
       - name: release log
         if: always()
         uses: softprops/action-gh-release@v2
         with:
-          tag: build-${{ github.run_number }}
+          tag_name: build-${{ github.run_number }}
           name: build ${{ github.run_number }}
           files: build.log
       - name: release apk
         if: hashFiles('src/app/build/outputs/apk/debug/app-debug.apk') != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag: build-${{ github.run_number }}
+          tag_name: build-${{ github.run_number }}
           name: build ${{ github.run_number }}
           files: src/app/build/outputs/apk/debug/app-debug.apk
