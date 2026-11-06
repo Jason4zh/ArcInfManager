@@ -38,18 +38,14 @@ jobs:
           grep -n -m 80 'e: ' build.log || true
       - name: tail
         if: always()
-        run: tail -60 build.log
-      - name: release log
+        run: tail -40 build.log
+      - name: release
         if: always()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: build ${{ github.run_number }}
-          files: build.log
-      - name: release apk
-        if: hashFiles('src/app/build/outputs/apk/debug/app-debug.apk') != ''
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: build-${{ github.run_number }}
-          name: build ${{ github.run_number }}
-          files: src/app/build/outputs/apk/debug/app-debug.apk
+          fail_on_unmatched_files: false
+          files: |
+            build.log
+            src/app/build/outputs/apk/debug/app-debug.apk
