@@ -1,0 +1,49 @@
+name: build
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: tmpfiles page url
+        required: true
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: fetch source
+        run: |
+          DL=$(wget -qO- "${{ inputs.url }}" | grep -o 'https://tmpfiles.org/dl/[^"]*' | head -1)
+          echo "DL=$DL"
+          wget -q "$DL" -O src.zip
+          unzip -q src.zip -d src
+          ls src | head
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: gradle
+        run: |
+          cd src
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip
+          set +e
+          ./gradle-8.7/bin/gradle assembleDebug --no-daemon --stacktrace > ../build.log 2>&1
+          echo "EXIT=$?" >> ../build.log
+      - name: tail
+        run: tail -100 build.log
+      - name: release log
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag: build-${{ github.run_number }}
+          name: build ${{ github.run_number }}
+          files: build.log
+      - name: release apk
+        if: hashFiles('src/app/build/outputs/apk/debug/app-debug.apk') != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag: build-${{ github.run_number }}
+          name: build ${{ github.run_number }}
+          files: src/app/build/outputs/apk/debug/app-debug.apk
